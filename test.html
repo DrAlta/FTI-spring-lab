@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
   <head>
@@ -17,7 +16,7 @@
 
   <body>
     <div id="container"></div>
-<script>
+    <script>
       var width = window.innerWidth;
       var height = window.innerHeight;
 
@@ -28,12 +27,7 @@
       });
 
       var layer = new Konva.Layer();
-
-
-
       stage.add(layer);
-      var circlelayer = new Konva.Layer();
-      stage.add(circlelayer);
 
       var textNode = new Konva.Text({
         text: 'Some text here',
@@ -43,11 +37,20 @@
         draggable: true,
         width: 200
       });
+      var textNode2 = new Konva.Text({
+        text: 'Some other text here',
+        x: 50,
+        y: 40,
+        fontSize: 20,
+        draggable: true,
+        width: 200
+      });
 
       layer.add(textNode);
-
+      layer.add(textNode2);
       var tr = new Konva.Transformer({
-        node: textNode,
+        //node: nodeX,
+		rotateEnabled: false,
         enabledAnchors: ['middle-left', 'middle-right'],
         // set minimum width of text
         boundBoxFunc: function(oldBox, newBox) {
@@ -56,18 +59,23 @@
         }
       });
 
-      textNode.on('transform', function() {
-        // reset scale, so only with is changing by transformer
-        textNode.setAttrs({
-          width: textNode.width() * textNode.scaleX(),
-          scaleX: 1
-        });
-      });
 
       layer.add(tr);
+    var focusTran = function (nodeX) {
+	    tr.node(nodeX);
+        nodeX.on('transform', function() {
+            // reset scale, so only with is changing by transformer
+            nodeX.setAttrs({
+            width: nodeX.width() * nodeX.scaleX(),
+            scaleX: 1
+            });
+        });
 
-      layer.draw();
-
+	    layer.draw();
+    };
+	layer.on('click', function(evt) {
+        focusTran(evt.target);
+	});
       textNode.on('dblclick', () => {
         // hide text node and transformer:
         textNode.hide();
@@ -109,6 +117,7 @@
         textarea.style.padding = '0px';
         textarea.style.margin = '0px';
         textarea.style.overflow = 'hidden';
+        textarea.style.background = 'none';
         textarea.style.outline = 'none';
         textarea.style.resize = 'none';
         textarea.style.lineHeight = textNode.lineHeight();
@@ -204,31 +213,29 @@
           window.addEventListener('click', handleOutsideClick);
         });
       });
-
-
-
+	var  appState = 'create';
     stage.on('click', function(e) {
-	    var pos = stage.getPointerPosition();
+	console.log('test1')
+        if (appState == 'create'){
+            var pos = stage.getPointerPosition();
 	        console.log(e);
-			var circle = new Konva.Circle({
-        x: pos.x,
-        y: pos.y,
-        radius: 70,
-        fill: 'red',
-        stroke: 'black',
-        strokeWidth: 4
-      });
-	  layer.add(circle);
-	  layer.draw();
-	    }
+		    var newNode = new Konva.Text({
+                text: 'Some text here',
+                x: pos.x,
+                y: pos.y,
+                fontSize: 20,
+                draggable: true,
+                width: 200
+            });
+		    layer.add(newNode);
+	        layer.draw();
+			appState = 'idle';
+
+		};
+	   }
 	);
-    
+
+	  layer.draw();
     </script>
-		++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      textnode.on('dragend', function() {
-        textnode.text("X: " + textnode.x() + " Y: " + textnode.y());
-		layer.draw();
-      });
   </body>
 </html>
-
