@@ -3,7 +3,7 @@
   <head>
     <script src="https://unpkg.com/konva@4.2.2/konva.min.js"></script>
     <meta charset="utf-8" />
-    <title>Konva Editable Text on html5 canvas Demo</title>
+    <title>AM Concepting Mapping Toy</title>
     <style>
       body {
         margin: 0;
@@ -11,12 +11,30 @@
         overflow: hidden;
         background-color: #f0f0f0;
       }
+      #buttons {
+        position: absolute;
+        top: 5px;
+        left: 10px;
+      }
+    </style>
     </style>
   </head>
 
   <body>
     <div id="container"></div>
+    <div id="buttons">
+      <button id="addNode">
+        Add Node
+      </button>
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/gun/lib/not.js"></script>
+
     <script>
+	//start gun stuff
+	var workspace = Gun().get('workspace'); 
+	var nodes = workspace.get('nodes');
+	nodes.not(function (key) {console.log("not "+key)})
       var width = window.innerWidth;
       var height = window.innerHeight;
 
@@ -41,14 +59,15 @@
 	});
 
 
-    var makeNode = function (id, posx, posy) {
+    var makeNode = function (title, posx, posy, id) {
         var textNode = new Konva.Text({
-            text: id,
+            text: title,
             x: posx,
             y: posy,
             fontSize: 20,
             draggable: true,
-            width: 200
+            width: 200,
+			id: id
         });
 		textLayer.add(textNode);
         textNode.on('dblclick', () => {
@@ -161,7 +180,9 @@
                 // hide on enter
                 // but don't hide on shift + enter
                 if (e.keyCode === 13 && !e.shiftKey) {
-                    textNode.text(textarea.value);
+                    //textNode.text(textarea.value);
+					console.log('putting:'+textNode.id());
+					nodes.get(textNode.id()).put({title: textarea.value});
                     removeTextarea();
                 }
                 // on esc do not set value back to node
@@ -180,7 +201,10 @@
 
             function handleOutsideClick(e) {
                 if (e.target !== textarea) {
-                    textNode.text(textarea.value);
+				console.log('putting:'+textNode.id());
+					nodes.get(textNode.id()).put({title: textarea.value});
+
+//                    textNode.text(textarea.value);
                     removeTextarea();
                 }
             }
@@ -210,19 +234,41 @@
         focusTran(evt.target);
 	});
 
-	var  appState = 'create';
+	var  appState = 'idle';
+	document.getElementById('addNode').addEventListener(
+        'click',
+        function() {
+            appState = 'idle';
+        },
+        false
+    );
+	
     stage.on('click', function(e) {
-	console.log('test1')
         if (appState == 'create'){
             var pos = stage.getPointerPosition();
-	        console.log(e);
-			makeNode("testid", pos.x, pos.y)
-	        textLayer.draw();
+	        nodes.set({x: pos.x, y: pos.y, title: "New Node"});
 			appState = 'idle';
-
 		};
-	   }
-	);
+	});
+	
+	textLayer.on('dragend', function(evt) {
+	    var trgt= evt.target;
+        console.log('dragend'+ trgt.id());
+		nodes.get(trgt.id()).put({x: trgt.x(), y: trgt.y()});
+    });
+	
+    nodes.map().on(function(nodeX, id){
+            console.log(id);
+			var oldnode = stage.findOne('#' + id);
+			if(oldnode){
+			    oldnode.text(nodeX.title);
+			   // oldnode.x(nodeX.x);
+			    //oldnode.y(nodeX.y);
+			} else {
+			    makeNode(nodeX.title, nodeX.x, nodeX.y, '' + id)
+			};
+	        textLayer.draw();
+    });
 
 	  textLayer.draw();
     </script>
