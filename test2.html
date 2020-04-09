@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.links line {
+  stroke: #999;
+  stroke-opacity: 0.6;
+}
+
+.nodes circle {
+  stroke: black	;
+  stroke-width: 0px;
+}
+
+svg {
+  border:1px solid black;
+}
+</style>
+<svg width="400" height="400"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+//create somewhere to put the force directed graph
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+    
+var radius = 15; 
+
+var nodes_data =  [
+    {"name": "Lillian", "sex": "F", width:100},
+    {"name": "Gordon", "sex": "M", width: 100},
+    ]
+
+//Sample links data 
+//type: A for Ally, E for Enemy
+var links_data = [
+//	{"source": "Lillian", "target": "Gordon", "type":"A" },
+    
+]
+
+
+//set up the simulation 
+var simulation = d3.forceSimulation()
+					//add nodes
+					.nodes(nodes_data);
+                    
+                
+             
+var link_force =  d3.forceLink(links_data)
+                        .id(function(d) { return d.name; });            
+            
+var charge_force = d3.forceManyBody()
+    .strength(-100);
+    
+var center_force = d3.forceCenter(width / 2, height / 2);  
+ 
+//custom force example 
+// bring all male nodes to right side, all female nodes to left side 
+function splitting_force() { 
+  for (var i = 0, n = nodes_data.length; i < n; ++i) {
+    curr_node = nodes_data[i];
+    if(curr_node.sex == "M"){
+        curr_node.x += 5;
+    } else if(curr_node.sex == "F"){
+        curr_node.x -= 5;
+    }    
+  }
+}
+poslinks=[{source:0, target: 1, x: 100, y: 0}];
+  function forceRelPos(alpha) {
+    console.log("test");
+      for (var i = 0, n = poslinks.length; i < n; ++i) {
+          var link = poslinks[i];
+          var source=nodes_data[link.source];
+          var target=nodes_data[link.target];
+          var rx = (source.x +source.vx - target.x - target.vx);
+          var ry = (source.y +source.vy - target.y - target.vy);
+          target.vx += (rx + link.x) * alpha;
+          target.vy += (ry + link.y) ;
+          rx = (target.x +target.vx - source.x - source.vx);
+          ry = (target.y +target.vy - source.y - source.vy);
+          source.vx += (rx - link.x) * alpha;
+          source.vy += (ry - link.y) * alpha;
+        console.log('rx: ' + rx +'test'+ (link.x));
+      };
+  };
+rellinks=[{source:0, target: 1, relation: "overlap"}];
+   function forceRel(alpha) {
+        console.log("test");
+         for (var i = 0, n = rellinks.length; i < n; ++i) {
+            var link = rellinks[i];
+            var source=nodes_data[link.source];
+            var target=nodes_data[link.target];
+		    var st = source.x + source.vx;
+		    var tt = target.x + target.vx;
+		    var tw = target.width + source.width;
+            if ( st < tt-tw){
+		        //source before target
+				console.log("before");
+				if (link.relation != "left") {
+				    console.log(tt - st)
+	                target.vx -= (tt - st + tw) * alpha;
+				};
+		    }else if (st > tt+tw) {
+		        //source after target  
+				console.log("after");
+				if (link.relation != "right") {
+	                target.vx -= (tt - st - tw) * alpha;
+				};
+		    } else {
+		        //overlaps
+				console.log("overlaps");
+
+				if (link.relation == "left") {
+				    console.log("OL");
+	                target.vx -= (tt - st -tw) * alpha;
+				}else if (link.relation == "right") {
+				    console.log("OR");
+	                target.vx -= (tt - st + tw) * alpha;
+	                //target.vx += (tt - st + tw) * alpha;
+				};
+		    };
+        //c'rx: ' + rx +'test'+ (link.x));
+      };
+  };
+               
+                        
+simulation
+    .force("charge_force", charge_force)
+    .force("center_force", center_force)
+    .force("links",link_force)
+    .force("splitting",forceRel);
+
+//add tick instructions: 
+simulation.on("tick", tickActions );
+
+//draw lines for the links 
+var link = svg.append("g")
+      .attr("class", "links")
+    .selectAll("line")
+    .data(links_data)
+    .enter().append("line")
+      .attr("stroke-width", 2)
+      .style("stroke", linkColour);        
+
+//draw circles for the nodes 
+var node = svg.append("g")
+        .attr("class", "nodes") 
+        .selectAll("circle")
+        .data(nodes_data)
+        .enter()
+        .append("circle")
+        .attr("r", radius)
+        .attr("fill", circleColour);  
+   
+var drag_handler = d3.drag()
+	.on("start", drag_start)
+	.on("drag", drag_drag)
+	.on("end", drag_end);	
+	
+drag_handler(node)
+
+/** Functions **/
+
+//Function to choose what color circle we have
+//Let's return blue for males and red for females
+function circleColour(d){
+	if(d.sex =="M"){
+		return "blue";
+	} else {
+		return "pink";
+	}
+}
+
+//Function to choose the line colour and thickness 
+//If the link type is "A" return green 
+//If the link type is "E" return red 
+function linkColour(d){
+	if(d.type == "A"){
+		return "green";
+	} else {
+		return "red";
+	}
+}
+
+//drag handler
+//d is the node 
+function drag_start(d) {
+ if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+}
+
+function drag_drag(d) {
+  d.fx = d3.event.x;
+  d.fy = d3.event.y;
+}
+
+
+function drag_end(d) {
+  if (!d3.event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+}
+    
+
+function tickActions() {
+    //bounding box around the outside 
+      node
+        .attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
+        .attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
+        
+    link
+        .attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+	  } 
+
+</script>
