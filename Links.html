@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Marked.js Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+            font-size: 16px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            background: #F9F9F9;
+        }
+
+        #container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        #content {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background: white;
+        }
+
+
+        nav {
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background: white;
+            margin-right: 10px;
+			width: 66%;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div style="display: flex">
+            <nav>
+                        <a href="#/README.md">Getting Started</a>
+            </nav>
+            <div id="content">cont</div>
+        </div>
+    </div>
+<script>
+newNode = 'id'
+missingNodes ={'id': new Set(['link1', 'link2','...'])}
+links = {link1:{source: "id", target: 'id2'},
+         link2:{source: "i2", target: 'id3'}}
+function addLink (linkX) {
+    var source = Links[linkX].source;
+    var target = Links[linkX].target;
+    // test for source node
+    if(!(sourceNode = stage.findOne('#' + source))) {
+	    console.log("source:" + source +" is missing"); 
+		if (missingNodes.hasOwnProperty(source)){
+		    console.log("Adding " + linkX + " to " + source)
+		    missingNodes[source].add(linkX)
+		} else {
+		    console.log("creating " + source + " with " + linkX)
+		    missingNodes[source] = new set(linkX)
+		
+		}
+	};
+    // test for target node
+    if(!(targetNode = stage.findOne('#' + target))) {
+	    console.log("target:" + target +" is missing"); 
+		if (missingNodes.hasOwnProperty(target)){
+		    console.log("Adding " + linkX + " to " + target)
+		    missingNodes[target].add(linkX)
+		} else {
+		    console.log("creating " + target + " with " + linkX)
+		    missingNodes[target] = new set(linkX)
+		
+		}
+	};
+
+////////////
+	if(sourceNode && targetNode) {
+	    console.log("linking " + source + " to " + target + " with " + linkX);
+		missingNodes[source].delete(linkX);
+		if (missingNodes[source].size == 0) {
+		    missingNodes.delete(source);
+		};
+		missingNodes[target].delete(linkX);
+		if (missingNodes[target].size == 0) {
+		    missingNodes.delete(target);
+		};
+	    
+    };
+}
+
+function processLink (linkX) {
+	console.log(linkX)
+}
+if(missingNodes.hasOwnProperty(newNode)) {
+	console.log(missingNodes[newNode])
+    
+	missingNodes[newNode].forEach(processLink)
+}
+</script>
+</body>
+</html>
