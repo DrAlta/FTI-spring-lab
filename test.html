@@ -5,86 +5,162 @@
     <meta charset="utf-8" />
     <title>AM Concepting Mapping Toy</title>
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background-color: #f0f0f0;
-      }
-      #buttons {
-        position: absolute;
-        top: 5px;
-        left: 10px;
-      }
-    #menu {
-        display: none;
-        position: absolute;
-        width: 60px;
-        background-color: white;
-        box-shadow: 0 0 5px grey;
-        border-radius: 3px;
-    }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        mapcontainer {
+        }
+        #buttons {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+        }
+        #menu {
+            display: none;
+            position: absolute;
+            width: 60px;
+            background-color: white;
+            box-shadow: 0 0 5px grey;
+            border-radius: 3px;
+        }
     </style>
     </style>
   </head>
 
   <body>
-    <div id="container"></div>
+    <div style="display: flex">
+        <div id="mapcontainer"></div>
+        <div id="contenty">te =======================================================================st</div>
+    </div>
     <div id="buttons">
       <button id="addNode">
         Add Node
       </button>
+      <button id="addLink" style="display: none">
+        Add Link
+      </button>
     <div id="menu">
-      <div><button id="pulse-button">Pulse</button><button id="delete-button">Delete</button></div>
-	</div>
-	<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/gun/lib/not.js"></script>
+      <div><button id="menuAddLink" style="display: none">Add Link</button><button id="delete-button">Delete</button></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/not.js"></script>
 
     <script>
-	//start gun stuff
-	var workspace = Gun().get('workspace'); 
-	var nodes = workspace.get('nodes');
-	nodes.not(function (key) {console.log("not "+key)})
-      var width = window.innerWidth;
-      var height = window.innerHeight;
+    var gunWorkspace = Gun().get('workspace'); 
+    var gunNodes = gunWorkspace.get('nodes');
+    var gunLinks = gunWorkspace.get('links');
 
-      var stage = new Konva.Stage({
-        container: 'container',
-        width: width,
+    var appLinks = new Set();
+    var linksByNode = {};
+    
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    var stage = new Konva.Stage({
+        container: 'mapcontainer',
+        width: width*2/3,
         height: height
       });
 
-      var textLayer = new Konva.Layer();
-      stage.add(textLayer);
+    var linkLayer = new Konva.Layer();
+    stage.add(linkLayer);
 
-	var tr = new Konva.Transformer({
-		//node: nodeX,
-		rotateEnabled: false,
-		enabledAnchors: ['middle-left', 'middle-right'],
-		// set minimum width of text
-		boundBoxFunc: function(oldBox, newBox) {
-			newBox.width = Math.max(30, newBox.width);
-			return newBox;
-		}
-	});
+    var textLayer = new Konva.Layer();
+    stage.add(textLayer);
 
+    var tr = new Konva.Transformer({
+        //node: nodeX,
+        rotateEnabled: false,
+        enabledAnchors: ['middle-left', 'middle-right'],
+        // set minimum width of text
+        boundBoxFunc: function(oldBox, newBox) {
+            newBox.width = Math.max(30, newBox.width);
+            return newBox;
+        }
+    });
+//////////////////////////////////////////////
+//link stuff
+function updateLink (linkX){
+    var source = appLinks[linkX].source;
+    var target = appLinks[linkX].target;
+
+    // test for source node
+    if(!(sourceNode = textLayer.findOne('#' + source))) {
+	    console.log("source:" + source +" is missing"); 
+	};
+    // test for target node
+    if(!(targetNode = textLayer.findOne('#' + target))) {
+	    console.log("target:" + target +" is missing"); 
+	};
+
+////////////
+	if(sourceNode && targetNode) {
+	    console.log("linking " + source + " to " + target + " with " + linkX);
+        var oldLink = linkLayer.findOne('#' + linkX);
+        if (oldLink) {
+            console.log('found link:' + linkX);
+            oldLink.points([sourceNode.x(), sourceNode.y(), targetNode.x(), targetNode.y()]);
+        } else {
+
+            var arrow = new Konva.Arrow({
+                x: 0,
+                y: 0,
+                points: [sourceNode.x(), sourceNode.y(), targetNode.x(), targetNode.y()],
+                pointerLength: 20,
+                pointerWidth: 20,
+                fill: 'black',
+                stroke: 'black',
+                strokeWidth: 4
+            });
+            linkLayer.add(arrow);
+	    };
+        linkLayer.draw();
+    };
+};
+function addLink (id, source, target) {
+    //add link to appLinks
+    appLinks[id] = {source: source, target: target}
+	//add source to LinksByNode	
+	if (linksByNode.hasOwnProperty(source)){
+		console.log("Adding " + id + " to " + source)
+	    linksByNode[source].add(id)
+	} else {
+		console.log("creating linksByNode:" + source + " (s) with " + id)
+		linksByNode[source] = new Set(id)
+	
+	}
+	//add target to LinksByNode
+	if (linksByNode.hasOwnProperty(target)){
+		console.log("Adding " + id + " to " + target)
+	    linksByNode[target].add(id)
+	} else {
+		console.log("creating linksByNode:" + target + " (t) with " + id)
+		linksByNode[target] = new Set(id)
+	
+	}
+    updateLink(id);
+}
+/////////////////////////////////////////////
 
     var makeNode = function (title, posx, posy, id) {
         var textNode = new Konva.Text({
             text: title,
             x: posx,
             y: posy,
-			align: 'center',
+            align: 'center',
             fontSize: 20,
             draggable: true,
             width: 200,
-			id: id
+            id: id
         });
-		textLayer.add(textNode);
+        textLayer.add(textNode);
         textNode.on('dblclick', () => {
             // hide text node and transformer:
             textNode.hide();
             tr.hide();
+            //node still there so don't clear selection
             textLayer.draw();
 
             // create textarea over canvas with absolute position
@@ -192,8 +268,8 @@
                 // but don't hide on shift + enter
                 if (e.keyCode === 13 && !e.shiftKey) {
                     //textNode.text(textarea.value);
-					console.log('putting:'+textNode.id());
-					nodes.get(textNode.id()).put({title: textarea.value});
+                    console.log('putting:'+textNode.id());
+                    gunNodes.get(textNode.id()).put({title: textarea.value});
                     removeTextarea();
                 }
                 // on esc do not set value back to node
@@ -212,8 +288,8 @@
 
             function handleOutsideClick(e) {
                 if (e.target !== textarea) {
-				console.log('putting:'+textNode.id());
-					nodes.get(textNode.id()).put({title: textarea.value});
+                console.log('putting:'+textNode.id());
+                    gunNodes.get(textNode.id()).put({title: textarea.value});
 
 //                    textNode.text(textarea.value);
                     removeTextarea();
@@ -230,8 +306,8 @@
 
     textLayer.add(tr);
     var focusTran = function (nodeX) {
-	    tr.node(nodeX);
-		tr.show();
+        tr.node(nodeX);
+        tr.show();
         nodeX.on('transform', function() {
             // reset scale, so only with is changing by transformer
             nodeX.setAttrs({
@@ -239,77 +315,106 @@
             scaleX: 1
             });
         });
-
-	    textLayer.draw();
+        setSelection(nodeX.id())  
+        textLayer.draw();
     };
-	textLayer.on('click', function(evt) {
+    textLayer.on('click', function(evt) {
+        if(appState == 'idle') {
         focusTran(evt.target);
-	});
+        } else if (appState == 'link'){
+            console.log("making link from " + selectedNode + " to "+ evt.target.id());
+            gunLinks.set({source: selectedNode, target: evt.target.id()})
+        };
+    });
 
-	var  appState = 'idle';
-	document.getElementById('addNode').addEventListener(
+    var  appState = 'idle';
+    var oldSelectedNode = null;
+    var selectedNode = null;
+    
+    function clearSelection() {
+        selectedNode = null;
+        document.getElementById('addLink').style.display = 'none';
+        document.getElementById('menuAddLink').style.display = 'none';
+
+    };
+    function setSelection(id) {
+        oldSelectedNode = selectedNode;
+        selectedNode = id;
+        document.getElementById('addLink').style.display = 'initial';
+        document.getElementById('menuAddLink').style.display = 'initial';
+        
+    };
+
+    document.getElementById('addNode').addEventListener(
         'click',
         function() {
             appState = 'create';
         },
         false
     );
-	
+
+    document.getElementById('addLink').addEventListener(
+        'click',
+        function() {
+            appState = 'link';
+        },
+        false
+    );
+
+    
     stage.on('click', function(e) {
         if (appState == 'create'){
             var pos = stage.getPointerPosition();
-	        nodes.set({x: pos.x, y: pos.y, title: "New Node"});
-			appState = 'idle';
-		};
-	});
-	
-	textLayer.on('dragend', function(evt) {
-	    var trgt= evt.target;
-        console.log('dragend'+ trgt.id());
-		nodes.get(trgt.id()).put({x: trgt.x(), y: trgt.y()});
+            gunNodes.set({x: pos.x, y: pos.y, title: "New Node"});
+            appState = 'idle';
+        };
     });
-	
-    nodes.map().on(function(nodeX, id){
+    
+    textLayer.on('dragend', function(evt) {
+        var trgt= evt.target;
+        console.log('dragend'+ trgt.id());
+        gunNodes.get(trgt.id()).put({x: trgt.x(), y: trgt.y()});
+    });
+    
+    gunNodes.map().on(function(nodeX, id){
             console.log(id);
-			var oldnode = stage.findOne('#' + id);
-			if (nodeX) {
-			    if(oldnode){
-	     		    oldnode.text(nodeX.title);
-			       // oldnode.x(nodeX.x);
-			       //oldnode.y(nodeX.y);
-				} else {
-				 	makeNode(nodeX.title, nodeX.x, nodeX.y, '' + id)
-				 };
-			} else {
-			    if(oldnode){
-				    oldnode.destroy();
-				};
-			};
-	        textLayer.draw();
+            var oldnode = textLayer.findOne('#' + id);
+            if (nodeX) {
+                if(oldnode){
+                    oldnode.text(nodeX.title);
+                   // oldnode.x(nodeX.x);
+                   //oldnode.y(nodeX.y);
+                } else {
+                    makeNode(nodeX.title, nodeX.x, nodeX.y, '' + id)
+                 };
+            } else {
+                if(oldnode){
+                    oldnode.destroy();
+                };
+            };
+            textLayer.draw();
+    });
+
+    gunLinks.map().on(function(linkX, id){
+            console.log("event link" + id);
+            addLink(id, linkX.source, linkX.target);
     });
 
 //////////////////////////////////////////////////////////////////////////
     // setup menu
     let currentShape;
     var menuNode = document.getElementById('menu');
-    document.getElementById('pulse-button').addEventListener('click', () => {
-        currentShape.to({
-            scaleX: 2,
-            scaleY: 2,
-            onFinish: () => {
-                currentShape.to({ scaleX: 1, scaleY: 1})
-            }
-        })
-    });
+
 
     document.getElementById('delete-button').addEventListener('click', () => {
-	    if(currentShape){
-		console.log('deleting ' + currentShape.id())
-		nodes.get(currentShape.id()).put(null);
+        if(currentShape){
+        console.log('deleting ' + currentShape.id())
+        gunNodes.get(currentShape.id()).put(null);
         currentShape.destroy();
-		tr.hide();
+        tr.hide();
+        clearSelection();
         textLayer.draw();
-		};
+        };
     });
 
       window.addEventListener('click', () => {
@@ -317,10 +422,9 @@
           menuNode.style.display = 'none';
       })
 
-
       stage.on('contextmenu', function(e) {
         // prevent default behavior
-		console.log("contest");
+        console.log("contest");
         e.evt.preventDefault();
         if (e.target === stage) {
           // if we are on empty place of the stage we will do nothing
@@ -336,7 +440,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 
-	  textLayer.draw();
+      textLayer.draw();
     </script>
   </body>
 </html>
