@@ -85,7 +85,7 @@
 function updateLink (linkX){
     var source = appLinks[linkX].source;
     var target = appLinks[linkX].target;
-
+     console.log("updating link:" + linkX);
     // test for source node
     if(!(sourceNode = textLayer.findOne('#' + source))) {
 	    console.log("source:" + source +" is missing"); 
@@ -112,6 +112,7 @@ function updateLink (linkX){
                 pointerWidth: 20,
                 fill: 'black',
                 stroke: 'black',
+                id: linkX,
                 strokeWidth: 4
             });
             linkLayer.add(arrow);
@@ -128,7 +129,7 @@ function addLink (id, source, target) {
 	    linksByNode[source].add(id)
 	} else {
 		console.log("creating linksByNode:" + source + " (s) with " + id)
-		linksByNode[source] = new Set(id)
+		linksByNode[source] = new Set([id])
 	
 	}
 	//add target to LinksByNode
@@ -137,14 +138,14 @@ function addLink (id, source, target) {
 	    linksByNode[target].add(id)
 	} else {
 		console.log("creating linksByNode:" + target + " (t) with " + id)
-		linksByNode[target] = new Set(id)
+		linksByNode[target] = new Set([id])
 	
 	}
     updateLink(id);
 }
 /////////////////////////////////////////////
 
-    var makeNode = function (title, posx, posy, id) {
+    var makeNode = function (title, posx, posy, width, id) {
         var textNode = new Konva.Text({
             text: title,
             x: posx,
@@ -152,7 +153,8 @@ function addLink (id, source, target) {
             align: 'center',
             fontSize: 20,
             draggable: true,
-            width: 200,
+            width: width,
+            offsetX: width/2,
             id: id
         });
         textLayer.add(textNode);
@@ -312,9 +314,15 @@ function addLink (id, source, target) {
             // reset scale, so only with is changing by transformer
             nodeX.setAttrs({
             width: nodeX.width() * nodeX.scaleX(),
+            offsetX: nodeX.width()/2,
             scaleX: 1
             });
         });
+        nodeX.on('transformend', function(evt) {
+            console.log('transform end:' + evt.target.id());
+            gunNodes.get(evt.target.id()).put({width: evt.target.width()});
+        });
+
         setSelection(nodeX.id())  
         textLayer.draw();
     };
@@ -365,7 +373,7 @@ function addLink (id, source, target) {
     stage.on('click', function(e) {
         if (appState == 'create'){
             var pos = stage.getPointerPosition();
-            gunNodes.set({x: pos.x, y: pos.y, title: "New Node"});
+            gunNodes.set({x: pos.x, y: pos.y, width: 200, title: "New Node"});
             appState = 'idle';
         };
     });
@@ -374,10 +382,12 @@ function addLink (id, source, target) {
         var trgt= evt.target;
         console.log('dragend'+ trgt.id());
         gunNodes.get(trgt.id()).put({x: trgt.x(), y: trgt.y()});
+        linksByNode[trgt.id()].forEach(updateLink)
+        console.log(linksByNode[trgt.id()]);
     });
     
     gunNodes.map().on(function(nodeX, id){
-            console.log(id);
+            console.log("event node:" + id);
             var oldnode = textLayer.findOne('#' + id);
             if (nodeX) {
                 if(oldnode){
@@ -385,7 +395,7 @@ function addLink (id, source, target) {
                    // oldnode.x(nodeX.x);
                    //oldnode.y(nodeX.y);
                 } else {
-                    makeNode(nodeX.title, nodeX.x, nodeX.y, '' + id)
+                    makeNode(nodeX.title, nodeX.x, nodeX.y, nodeX.width, id)
                  };
             } else {
                 if(oldnode){
@@ -396,7 +406,7 @@ function addLink (id, source, target) {
     });
 
     gunLinks.map().on(function(linkX, id){
-            console.log("event link" + id);
+            console.log("event link:" + id);
             addLink(id, linkX.source, linkX.target);
     });
 
