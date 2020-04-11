@@ -334,8 +334,10 @@ function addLink (id, source, target) {
         } else if (appState == 'link'){
             console.log("making link from " + selectedNode + " to "+ evt.target.id());
             //gun.get(selectedNode);
-            gunLinks.set({source: gun.get(selectedNode), target: gun.get(evt.target.id())})
-
+            var junk=gunLinks.set({source: selectedNode, target: evt.target.id()});
+            
+            junk.get("source").put(gun.get(selectedNode));
+            junk.get("target").put(gun.get(evt.target.id()));
             console.log('leaving' + gun.get(evt.target.id()));
   //          gunLinks.set({source: gun.get(selectedNode), target: gun.get(evt.target.id())})
         };
@@ -413,10 +415,20 @@ function addLink (id, source, target) {
     });
 
     gunLinks.map().on(function(linkX, id){
-            console.log("event link:" + id);
+            console.log(id, "event link:", Gun.node.soul(linkX));
+            linkX=gun.get(Gun.node.soul(linkX));
+
+            linkX.get('source').once((node, key)=>{
+                console.log("link source callback", node,key)
+                var source=node;
+                linkX.get('target').once((node, key)=>{
+                    console.log("link target callback", node,key)
+                    addLink(id, Gun.node.soul(source), Gun.node.soul(node));
+                 })
+            })
             console.log(Gun.node.soul(linkX.source), Gun.node.soul(linkX.target));
             
-            addLink(id, Gun.node.soul(linkX.source), Gun.node.soul(linkX.target));
+//            addLink(id, Gun.node.soul(linkX.source), Gun.node.soul(linkX.target));
     });
 
 //////////////////////////////////////////////////////////////////////////
