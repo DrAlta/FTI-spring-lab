@@ -52,8 +52,9 @@
     var gunNodes = gunWorkspace.get('nodes');
     var gunLinks = gunWorkspace.get('links');
 
-    var appLinks = new Set();
+    var appLinks = {};
     var linksByNode = {};
+    var appNodes= new Set();
     
     var width = window.innerWidth;
     var height = window.innerHeight;
@@ -85,7 +86,7 @@
 function updateLink (linkX){
     var source = appLinks[linkX].source;
     var target = appLinks[linkX].target;
-     console.log("updating link:" + linkX);
+    //console.log("updating link:" + linkX);
     // test for source node
     if(!(sourceNode = textLayer.findOne('#' + source))) {
 	    console.log("source:" + source +" is missing"); 
@@ -99,15 +100,26 @@ function updateLink (linkX){
 	if(sourceNode && targetNode) {
 	    console.log("linking " + source + " to " + target + " with " + linkX);
         var oldLink = linkLayer.findOne('#' + linkX);
+                var intX= (sourceNode.x()<targetNode.x()) ?
+                    {min: sourceNode.x()+(sourceNode.width()/2), max: targetNode.x()-(targetNode.width()/2)}
+                :
+                    {min: targetNode.x()+(targetNode.width()/2), max: sourceNode.x()-(sourceNode.width()/2)}
+                
+                var intY=(sourceNode.y()<targetNode.y()) ?
+                    {min: sourceNode.y()+(sourceNode.height()/2), max: targetNode.x()}
+                :
+                    {min: targetNode.y()+(targetNode.height()/2), max: sourceNode.y()}
+                console.log("ints",intX, intY)
+                console.log("inter",inter({x: sourceNode.x(), y: sourceNode.y()}, {x: targetNode.x(), y: targetNode.y()}, intX, intY))
         if (oldLink) {
-            console.log('found link:' + linkX);
-            oldLink.points([sourceNode.x(), sourceNode.y(), targetNode.x(), targetNode.y()]);
+            //console.log('found link:' + linkX);
+                oldLink.points(inter({x: sourceNode.x(), y: sourceNode.y()}, {x: targetNode.x(), y: targetNode.y()}, intX, intY))
         } else {
 
             var arrow = new Konva.Arrow({
                 x: 0,
                 y: 0,
-                points: [sourceNode.x(), sourceNode.y(), targetNode.x(), targetNode.y()],
+                points: inter({x: sourceNode.x(), y: sourceNode.y()}, {x: targetNode.x(), y: targetNode.y()}, intX, intY),
                 pointerLength: 20,
                 pointerWidth: 20,
                 fill: 'black',
@@ -122,32 +134,116 @@ function updateLink (linkX){
 };
 function addLink (id, source, target) {
     //add link to appLinks
-    console.log("add link source");
-    console.log(source);
-    appLinks[id] = {source: source, target: target}
+   appLinks[id] = {source: source, target: target}
 	//add source to LinksByNode	
 	if (linksByNode.hasOwnProperty(source)){
-		console.log("Adding " + id + " to " + source)
+		//console.log("Adding " + id + " to " + source)
 	    linksByNode[source].add(id)
 	} else {
-		console.log("creating linksByNode:" + source + " (s) with " + id)
+		//console.log("creating linksByNode:" + source + " (s) with " + id)
 		linksByNode[source] = new Set([id])
 	
 	}
 	//add target to LinksByNode
 	if (linksByNode.hasOwnProperty(target)){
-		console.log("Adding " + id + " to " + target)
+		//console.log("Adding " + id + " to " + target)
 	    linksByNode[target].add(id)
 	} else {
-		console.log("creating linksByNode:" + target + " (t) with " + id)
+		//console.log("creating linksByNode:" + target + " (t) with " + id)
 		linksByNode[target] = new Set([id])
 	
 	}
     updateLink(id);
 }
 /////////////////////////////////////////////
+function inter(a, b, xInt, yInt) {
+console.log("a",a,"b",b,"int",xInt)
+        if (b.x == a.x){
+            var ym = null;
+        }else{
+            var ym = (b.y - a.y) / (b.x - a.x);
+            var yb=a.y - (ym*a.x);
+        };
 
+        if (b.y == a.y){
+            var xm = null;
+        }else{
+            var xm = (b.x - a.x) / (b.y - a.y); 
+            var xb=a.x - (xm*a.y);
+        };
+
+        var xb=a.x - (xm*a.y);
+
+        // limit x to range
+		if (ym === null) {
+
+			if(a.x > xInt.max){
+                console.log("a.x>xint",xInt.max)
+				a.x = xInt.max;
+			} else if ( a.x < xInt.min){
+                console.log("a.x<xint",xInt.min)
+				a.x = xInt.min;
+			}
+			if(b.x > xInt.max){
+				b.x = xInt.max;
+			} else if ( b.x < xInt.min){
+				b.x = xInt.min;
+			}
+		} else {
+			if(a.x > xInt.max){
+                console.log("a.x>xint",xInt.max)
+
+				a.x = xInt.max;
+				a.y = (ym * a.x)+ yb; 
+			} else if ( a.x < xInt.min){
+                console.log("a.x:",a.x,"<xint",xInt.min)
+
+				a.x = xInt.min;
+//				a.y = (ym * a.x)+ yb; 
+			}
+			if(b.x > xInt.max){
+				b.x = xInt.max;
+				b.y = (ym * b.x)+ yb; 
+			} else if ( b.x < xInt.min){
+				b.x = xInt.min;
+				b.y = (ym * b.x)+ yb; 
+			}
+		}
+        //limiy y to range
+/*        if (xm === null) {
+			if(a.y > yInt.max){
+				a.y = yInt.max;
+			} else if ( a.y < yInt.min){
+				a.y = yInt.min;
+			}
+			if(b.y > yInt.max){
+				b.y = yInt.max;
+			} else if ( b.y < yInt.min){
+				b.y = yInt.min;
+			}
+		} else {
+			if(a.y > yInt.max){
+				a.y = yInt.max;
+				a.x = (xm * a.y)+ xb; 
+			} else if ( a.y < yInt.min){
+				a.y = yInt.min;
+				a.x = (xm * a.y)+ xb; 
+			}
+			if(b.y > yInt.max){
+				b.y = yInt.max;
+				b.x = (xm * b.y)+ xb; 
+			} else if ( b.y < yInt.min){
+				b.y = yInt.min;
+				b.x = (xm * b.y)+ xb; 
+			}
+		}*/
+        console.log("a.x",a.x)
+   
+  return [a.x, a.y, b.x, b.y];
+}
+///////////////////////////////////////////////
     var makeNode = function (title, posx, posy, width, id) {
+        appNodes.add(id)
         var textNode = new Konva.Text({
             text: title,
             x: posx,
@@ -332,6 +428,7 @@ function addLink (id, source, target) {
         if(appState == 'idle') {
         focusTran(evt.target);
         } else if (appState == 'link'){
+            appState= 'idle';
             console.log("making link from " + selectedNode + " to "+ evt.target.id());
             //gun.get(selectedNode);
             var junk=gunLinks.set({source: selectedNode, target: evt.target.id()});
@@ -395,7 +492,7 @@ function addLink (id, source, target) {
     });
     
     gunNodes.map().on(function(nodeX, id){
-            console.log("event node:" + (id == Gun.node.soul(nodeX)));
+            //console.log("event node:" + (id == Gun.node.soul(nodeX)));
             var oldnode = textLayer.findOne('#' + id);
             if (nodeX) {
                 if(oldnode){
@@ -403,7 +500,6 @@ function addLink (id, source, target) {
                    // oldnode.x(nodeX.x);
                    //oldnode.y(nodeX.y);
                 } else {
-                    console.log(Gun.node.soul(nodeX));
                     makeNode(nodeX.title, nodeX.x, nodeX.y, nodeX.width, Gun.node.soul(nodeX))
                  };
             } else {
@@ -415,18 +511,17 @@ function addLink (id, source, target) {
     });
 
     gunLinks.map().on(function(linkX, id){
-            console.log(id, "event link:", Gun.node.soul(linkX));
             linkX=gun.get(Gun.node.soul(linkX));
+            console.log(id, "event link:", linkX);
 
-            linkX.get('source').once((node, key)=>{
-                console.log("link source callback", node,key)
+            linkX.get('source').once((node, key)=>{//gunfu to get the souls of the nodes
+                //console.log("link source callback", node,key)
                 var source=node;
                 linkX.get('target').once((node, key)=>{
-                    console.log("link target callback", node,key)
+                    //console.log("link target callback", node,key)
                     addLink(id, Gun.node.soul(source), Gun.node.soul(node));
                  })
             })
-            console.log(Gun.node.soul(linkX.source), Gun.node.soul(linkX.target));
             
 //            addLink(id, Gun.node.soul(linkX.source), Gun.node.soul(linkX.target));
     });
@@ -455,7 +550,6 @@ function addLink (id, source, target) {
 
       stage.on('contextmenu', function(e) {
         // prevent default behavior
-        console.log("contest");
         e.evt.preventDefault();
         if (e.target === stage) {
           // if we are on empty place of the stage we will do nothing
