@@ -45,10 +45,10 @@
       <div><button id="menuAddLink" style="display: none">Add Link</button><button id="delete-button">Delete</button></div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/lib/not.js"></script>
 
     <script>
-    var gunWorkspace = Gun().get('workspace'); 
+    var gun = Gun();
+    var gunWorkspace = gun.get('workspace'); 
     var gunNodes = gunWorkspace.get('nodes');
     var gunLinks = gunWorkspace.get('links');
 
@@ -122,6 +122,8 @@ function updateLink (linkX){
 };
 function addLink (id, source, target) {
     //add link to appLinks
+    console.log("add link source");
+    console.log(source);
     appLinks[id] = {source: source, target: target}
 	//add source to LinksByNode	
 	if (linksByNode.hasOwnProperty(source)){
@@ -331,7 +333,11 @@ function addLink (id, source, target) {
         focusTran(evt.target);
         } else if (appState == 'link'){
             console.log("making link from " + selectedNode + " to "+ evt.target.id());
-            gunLinks.set({source: selectedNode, target: evt.target.id()})
+            //gun.get(selectedNode);
+            gunLinks.set({source: gun.get(selectedNode), target: gun.get(evt.target.id())})
+
+            console.log('leaving' + gun.get(evt.target.id()));
+  //          gunLinks.set({source: gun.get(selectedNode), target: gun.get(evt.target.id())})
         };
     });
 
@@ -387,7 +393,7 @@ function addLink (id, source, target) {
     });
     
     gunNodes.map().on(function(nodeX, id){
-            console.log("event node:" + id);
+            console.log("event node:" + (id == Gun.node.soul(nodeX)));
             var oldnode = textLayer.findOne('#' + id);
             if (nodeX) {
                 if(oldnode){
@@ -395,7 +401,8 @@ function addLink (id, source, target) {
                    // oldnode.x(nodeX.x);
                    //oldnode.y(nodeX.y);
                 } else {
-                    makeNode(nodeX.title, nodeX.x, nodeX.y, nodeX.width, id)
+                    console.log(Gun.node.soul(nodeX));
+                    makeNode(nodeX.title, nodeX.x, nodeX.y, nodeX.width, Gun.node.soul(nodeX))
                  };
             } else {
                 if(oldnode){
@@ -407,7 +414,9 @@ function addLink (id, source, target) {
 
     gunLinks.map().on(function(linkX, id){
             console.log("event link:" + id);
-            addLink(id, linkX.source, linkX.target);
+            console.log(Gun.node.soul(linkX.source), Gun.node.soul(linkX.target));
+            
+            addLink(id, Gun.node.soul(linkX.source), Gun.node.soul(linkX.target));
     });
 
 //////////////////////////////////////////////////////////////////////////
