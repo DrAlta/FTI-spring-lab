@@ -65,6 +65,9 @@
         height: height
       });
 
+    var rectLayer = new Konva.Layer();
+    stage.add(rectLayer);
+
     var linkLayer = new Konva.Layer();
     stage.add(linkLayer);
 
@@ -86,31 +89,62 @@
 function updateLink (linkX){
     var source = appLinks[linkX].source;
     var target = appLinks[linkX].target;
-    //console.log("updating link:" + linkX);
+    console.log("updating link:" + linkX);
     // test for source node
-    if(!(sourceNode = textLayer.findOne('#' + source))) {
+    if(!(sourceNode = textLayer.findOne('#text:' + source))) {
 	    console.log("source:" + source +" is missing"); 
 	};
     // test for target node
-    if(!(targetNode = textLayer.findOne('#' + target))) {
+    if(!(targetNode = textLayer.findOne('#text:' + target))) {
 	    console.log("target:" + target +" is missing"); 
 	};
 
 ////////////
 	if(sourceNode && targetNode) {
 	    console.log("linking " + source + " to " + target + " with " + linkX);
-        var oldLink = linkLayer.findOne('#' + linkX);
+        var oldLink = linkLayer.findOne('#link:' + linkX);
+/////////////////////////////////////////////////////
+//old limits        
+console.log("S+w",sourceNode.x()+(sourceNode.width()/2)-10, )
                 var intX= (sourceNode.x()<targetNode.x()) ?
-                    {min: sourceNode.x()+(sourceNode.width()/2), max: targetNode.x()-(targetNode.width()/2)}
+                    {min: sourceNode.x()+(sourceNode.width()/2)-10, max: targetNode.x()+10-(targetNode.width()/2)}
                 :
-                    {min: targetNode.x()+(targetNode.width()/2), max: sourceNode.x()-(sourceNode.width()/2)}
+                    {min: targetNode.x()+(targetNode.width()/2)-10, max: sourceNode.x()+10-(sourceNode.width()/2)}
                 
                 var intY=(sourceNode.y()<targetNode.y()) ?
-                    {min: sourceNode.y()+(sourceNode.height()/2), max: targetNode.x()}
+                    {min: sourceNode.y()-10+(sourceNode.height()/2), max: targetNode.y()}
                 :
-                    {min: targetNode.y()+(targetNode.height()/2), max: sourceNode.y()}
+                    {min: targetNode.y()-10+(targetNode.height()/2), max: sourceNode.y()}
+//old limits
+/////////////////////////////////////
+//new limits
+smin=(sourceNode.x()-(sourceNode.width()/2))-10;
+smax=(sourceNode.x()+(sourceNode.width()/2)+10);
+
+tmin=targetNode.x()-(targetNode.width()/2)-10;
+tmax=(targetNode.x()+(targetNode.width()/2)+10);
+
+if (sourceNode.x() < targetNode.x()){
+    if(smax > tmin) {
+    console.log("over lap")
+    intX = {min: 0, max:width}
+    } else {
+        intx={min: smax, max: tmin}
+    }
+} else if (targetNode.x() < sourceNode.x()){
+    if(tmax > smin) {
+    console.log("over lap")
+    intX = {min: 0, max:width}
+    } else {
+        intx={min: tmax, max: smin}
+    }
+} else {
+console.log("funk me")
+}
+
+//new limits
+////////////////////////////////
                 console.log("ints",intX, intY)
-                console.log("inter",inter({x: sourceNode.x(), y: sourceNode.y()}, {x: targetNode.x(), y: targetNode.y()}, intX, intY))
         if (oldLink) {
             //console.log('found link:' + linkX);
                 oldLink.points(inter({x: sourceNode.x(), y: sourceNode.y()}, {x: targetNode.x(), y: targetNode.y()}, intX, intY))
@@ -124,7 +158,7 @@ function updateLink (linkX){
                 pointerWidth: 20,
                 fill: 'black',
                 stroke: 'black',
-                id: linkX,
+                id: "link:" + linkX,
                 strokeWidth: 4
             });
             linkLayer.add(arrow);
@@ -157,7 +191,11 @@ function addLink (id, source, target) {
 }
 /////////////////////////////////////////////
 function inter(a, b, xInt, yInt) {
-console.log("a",a,"b",b,"int",xInt)
+//console.log("a",a,"b",b,"int",xInt)
+oa={...a};
+ob={...b};
+/*xInt={min:125,max: 300}
+yInt={min:1,max: 300}*/
         if (b.x == a.x){
             var ym = null;
         }else{
@@ -176,12 +214,12 @@ console.log("a",a,"b",b,"int",xInt)
 
         // limit x to range
 		if (ym === null) {
-
+          //  console.log("ym=null")
 			if(a.x > xInt.max){
-                console.log("a.x>xint",xInt.max)
+                //console.log("a.x>xint",xInt.max)
 				a.x = xInt.max;
 			} else if ( a.x < xInt.min){
-                console.log("a.x<xint",xInt.min)
+                //console.log("a.x<xint",xInt.min)
 				a.x = xInt.min;
 			}
 			if(b.x > xInt.max){
@@ -190,30 +228,36 @@ console.log("a",a,"b",b,"int",xInt)
 				b.x = xInt.min;
 			}
 		} else {
+            //console.log("ym+", ym)
 			if(a.x > xInt.max){
-                console.log("a.x>xint",xInt.max)
+                //console.log("a.x>xint",xInt.max)
 
 				a.x = xInt.max;
-				a.y = (ym * a.x)+ yb; 
+//				a.y = (ym * a.x)+ yb; 
 			} else if ( a.x < xInt.min){
-                console.log("a.x:",a.x,"<xint",xInt.min)
+                //console.log("a.x:",a.x,"<xint",xInt.min)
 
 				a.x = xInt.min;
-//				a.y = (ym * a.x)+ yb; 
+	//			a.y = (ym * a.x)+ yb; 
 			}
 			if(b.x > xInt.max){
+                //console.log("bx>xmax")
 				b.x = xInt.max;
-				b.y = (ym * b.x)+ yb; 
+		//		b.y = (ym * b.x)+ yb; 
 			} else if ( b.x < xInt.min){
+                //console.log(b.x,"bx<xmin",xInt.min)
 				b.x = xInt.min;
-				b.y = (ym * b.x)+ yb; 
+			//	b.y = (ym * b.x)+ yb; 
 			}
 		}
         //limiy y to range
-/*        if (xm === null) {
+		if (xm === null) {
+            //console.log("xm-null")
 			if(a.y > yInt.max){
+               // console.log("a.y>yint",yInt.max)
 				a.y = yInt.max;
 			} else if ( a.y < yInt.min){
+                //console.log("a.y<yint",yInt.min)
 				a.y = yInt.min;
 			}
 			if(b.y > yInt.max){
@@ -223,9 +267,13 @@ console.log("a",a,"b",b,"int",xInt)
 			}
 		} else {
 			if(a.y > yInt.max){
+                //console.log("a.y>yint",yInt.max)
+
 				a.y = yInt.max;
 				a.x = (xm * a.y)+ xb; 
 			} else if ( a.y < yInt.min){
+                //console.log("a.y:",a.y,"<yint",yInt.min)
+
 				a.y = yInt.min;
 				a.x = (xm * a.y)+ xb; 
 			}
@@ -236,8 +284,8 @@ console.log("a",a,"b",b,"int",xInt)
 				b.y = yInt.min;
 				b.x = (xm * b.y)+ xb; 
 			}
-		}*/
-        console.log("a.x",a.x)
+		}
+        //console.log("a.x",a.x,"oa.x",oa.x,"a.y",a.y,"oa.y",oa.y)
    
   return [a.x, a.y, b.x, b.y];
 }
@@ -253,9 +301,27 @@ console.log("a",a,"b",b,"int",xInt)
             draggable: true,
             width: width,
             offsetX: width/2,
-            id: id
+            id: 'text:'+id,
         });
+        //console.log("making nodes")
+        var rectNode = new Konva.Rect({
+            x: posx,
+            y: posy,
+            stroke: '#555',
+            strokeWidth: 5,
+            fill: '#ddd',
+            width: width,
+            height: textNode.height(),
+            offsetX: width/2,
+            id: "rect:"+id,
+            cornerRadius: 10
+        });
+        rectLayer.add(rectNode);
+         rectLayer.draw();
+
         textLayer.add(textNode);
+/////////
+//edit node text
         textNode.on('dblclick', () => {
             // hide text node and transformer:
             textNode.hide();
@@ -269,7 +335,8 @@ console.log("a",a,"b",b,"int",xInt)
 
             // at first lets find position of text node relative to the stage:
             var textPosition = textNode.absolutePosition();
-
+           textPosition.x -= textNode.offsetX()
+console.log("here:", textPosition)
             // then lets find position of stage container on the page:
             var stageBox = stage.container().getBoundingClientRect();
 
@@ -369,7 +436,7 @@ console.log("a",a,"b",b,"int",xInt)
                 if (e.keyCode === 13 && !e.shiftKey) {
                     //textNode.text(textarea.value);
                     console.log('putting:'+textNode.id());
-                    gunNodes.get(textNode.id()).put({title: textarea.value});
+                    gunNodes.get(textNode.id().substring(5)).put({title: textarea.value});
                     removeTextarea();
                 }
                 // on esc do not set value back to node
@@ -389,7 +456,7 @@ console.log("a",a,"b",b,"int",xInt)
             function handleOutsideClick(e) {
                 if (e.target !== textarea) {
                 console.log('putting:'+textNode.id());
-                    gunNodes.get(textNode.id()).put({title: textarea.value});
+                    gunNodes.get(textNode.id().substring(5)).put({title: textarea.value});
 
 //                    textNode.text(textarea.value);
                     removeTextarea();
@@ -415,13 +482,22 @@ console.log("a",a,"b",b,"int",xInt)
             offsetX: nodeX.width()/2,
             scaleX: 1
             });
+            rectLayer.findOne('#rect:'+nodeX.id().substring(5)).setAttrs({
+            x: nodeX.x(),
+            y: nodeX.y(),
+            offsetX: nodeX.offsetX(),
+            width: nodeX.width(),
+            height: nodeX.height(),
+            
+            });
+            rectLayer.draw();
         });
         nodeX.on('transformend', function(evt) {
             console.log('transform end:' + evt.target.id());
-            gunNodes.get(evt.target.id()).put({width: evt.target.width()});
+            gunNodes.get(evt.target.id().substring(5)).put({width: evt.target.width()});
         });
 
-        setSelection(nodeX.id())  
+        setSelection(nodeX.id().substring(5))  
         textLayer.draw();
     };
     textLayer.on('click', function(evt) {
@@ -431,11 +507,11 @@ console.log("a",a,"b",b,"int",xInt)
             appState= 'idle';
             console.log("making link from " + selectedNode + " to "+ evt.target.id());
             //gun.get(selectedNode);
-            var junk=gunLinks.set({source: selectedNode, target: evt.target.id()});
+            var junk=gunLinks.set({source: selectedNode, target: evt.target.id().substring(5)});
             
             junk.get("source").put(gun.get(selectedNode));
-            junk.get("target").put(gun.get(evt.target.id()));
-            console.log('leaving' + gun.get(evt.target.id()));
+            junk.get("target").put(gun.get(evt.target.id().substring(5)));
+            console.log('leaving' + gun.get(evt.target.id().substring(5)));
   //          gunLinks.set({source: gun.get(selectedNode), target: gun.get(evt.target.id())})
         };
     });
@@ -482,26 +558,42 @@ console.log("a",a,"b",b,"int",xInt)
             appState = 'idle';
         };
     });
-    
+///////////
+    textLayer.on('dragmove', function(evt) {
+        var trgt= evt.target;
+        console.log('dragging'+ trgt.id());
+        linksByNode[trgt.id().substring(5)].forEach(updateLink)
+        console.log(linksByNode[trgt.id().substring(5)]);
+        rectLayer.findOne('#rect:'+trgt.id().substring(5)).setAttrs({
+            x: trgt.x(),
+            y: trgt.y(),
+            offsetX: trgt.offsetX(),
+            width: trgt.width(),
+            height: trgt.height(),
+            
+            });
+        rectLayer.draw();
+
+    });
+//////////
     textLayer.on('dragend', function(evt) {
         var trgt= evt.target;
         console.log('dragend'+ trgt.id());
-        gunNodes.get(trgt.id()).put({x: trgt.x(), y: trgt.y()});
-        linksByNode[trgt.id()].forEach(updateLink)
-        console.log(linksByNode[trgt.id()]);
+        gunNodes.get(trgt.id().substring(5)).put({x: trgt.x(), y: trgt.y()});
     });
     
     gunNodes.map().on(function(nodeX, id){
-            //console.log("event node:" + (id == Gun.node.soul(nodeX)));
-            var oldnode = textLayer.findOne('#' + id);
+            //console.log("event node:" + id);
+            var oldnode = textLayer.findOne('#text:' + id);
             if (nodeX) {
                 if(oldnode){
+                console.log()
                     oldnode.text(nodeX.title);
                    // oldnode.x(nodeX.x);
                    //oldnode.y(nodeX.y);
                 } else {
                     makeNode(nodeX.title, nodeX.x, nodeX.y, nodeX.width, Gun.node.soul(nodeX))
-                 };
+                };
             } else {
                 if(oldnode){
                     oldnode.destroy();
@@ -535,7 +627,7 @@ console.log("a",a,"b",b,"int",xInt)
     document.getElementById('delete-button').addEventListener('click', () => {
         if(currentShape){
         console.log('deleting ' + currentShape.id())
-        gunNodes.get(currentShape.id()).put(null);
+        gunNodes.get(currentShape.id().substring(5)).put(null);
         currentShape.destroy();
         tr.hide();
         clearSelection();
